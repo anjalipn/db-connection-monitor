@@ -5,8 +5,8 @@ A reusable Spring Boot library for monitoring database connections and automatic
 ## Features
 
 - **Periodic Connection Monitoring**: Automatically tests database connections at configurable intervals
-- **Safe Shutdown Logic**: Ensures no active transactions or threads are killed immediately
-- **Connection Pool State Monitoring**: Monitors HikariCP connection pool metrics for safe shutdown decisions
+- **Conservative Shutdown Strategy**: Only shuts down when safe (no active transactions)
+- **Pool Utilization Monitoring**: Logs warnings for critical pool utilization levels
 - **Comprehensive Logging**: Detailed logging of all monitoring activities and shutdown decisions
 - **Easy Integration**: Auto-configuration for seamless integration into existing Spring Boot applications
 
@@ -35,10 +35,11 @@ db:
     enabled: true
     # Health check query (default: SELECT 1)
     health-check-query: "SELECT 1"
-    # Connection timeout in milliseconds (default: 5000)
-    connection-timeout: 5000
+
     # Maximum consecutive failures before considering shutdown (default: 3)
     max-failure-threshold: 3
+    # Critical pool utilization threshold for logging warnings (default: 0.9)
+    critical-pool-utilization: 0.9
     # Monitoring interval in milliseconds (default: 30000)
     monitoring-interval: 30000
 ```
@@ -53,8 +54,8 @@ The library will automatically start monitoring your database connections. No ad
 |----------|---------|-------------|
 | `db.monitor.enabled` | `true` | Enable/disable the database monitor |
 | `db.monitor.health-check-query` | `SELECT 1` | SQL query to test database connectivity |
-| `db.monitor.connection-timeout` | `5000` | Connection timeout in milliseconds |
 | `db.monitor.max-failure-threshold` | `3` | Maximum consecutive failures before considering shutdown |
+| `db.monitor.critical-pool-utilization` | `0.9` | Critical pool utilization threshold (0.0-1.0) for logging warnings |
 | `db.monitor.monitoring-interval` | `30000` | Monitoring interval in milliseconds |
 
 
@@ -83,18 +84,16 @@ This ensures that:
 
 The library provides comprehensive logging at different levels:
 
-- **DEBUG**: Detailed monitoring cycle information
-- **INFO**: Manual health check requests
-- **WARN**: Critical pool utilization and connection failures
+- **DEBUG**: Detailed monitoring cycle information and pool utilization metrics
+- **INFO**: Safe shutdown checks and pool state information
+- **WARN**: Critical pool utilization warnings and connection failures
 - **ERROR**: Shutdown decisions and final pool state
 
 Example log output:
 ```
-2024-01-15 10:30:00 [scheduling-1] WARN  c.a.d.s.DatabaseConnectionMonitorService - Database connection test failed. Consecutive failures: 1
-2024-01-15 10:30:30 [scheduling-1] WARN  c.a.d.s.DatabaseConnectionMonitorService - Database connection test failed. Consecutive failures: 2
-2024-01-15 10:31:00 [scheduling-1] WARN  c.a.d.s.DatabaseConnectionMonitorService - Database connection test failed. Consecutive failures: 3
-2024-01-15 10:31:00 [scheduling-1] INFO  c.a.d.s.DatabaseConnectionMonitorService - Safe shutdown check - Active: 2, Idle: 0, Total: 2, Waiting: 0
-2024-01-15 10:31:00 [scheduling-1] WARN  c.a.d.s.DatabaseConnectionMonitorService - Cannot shutdown safely: 2 active connections detected. Will retry on next monitoring cycle.
+2024-01-15 10:30:00 [scheduling-1] DEBUG c.a.d.s.DatabaseConnectionMonitorService - Pool utilization check - Max: 10, Active: 3, Idle: 7, Total: 10, Waiting: 0, Utilization: 30.0%
+2024-01-15 10:30:30 [scheduling-1] WARN  c.a.d.s.DatabaseConnectionMonitorService - Critical pool utilization detected: 95.0% (threshold: 90.0%) - Active: 9, Max: 10, Waiting: 2
+2024-01-15 10:31:00 [scheduling-1] WARN  c.a.d.s.DatabaseConnectionMonitorService - Database connection test failed. Consecutive failures: 1
 2024-01-15 10:31:30 [scheduling-1] INFO  c.a.d.s.DatabaseConnectionMonitorService - Safe shutdown check - Active: 0, Idle: 0, Total: 0, Waiting: 0
 2024-01-15 10:31:30 [scheduling-1] ERROR c.a.d.s.DatabaseConnectionMonitorService - Safe to shutdown: No active connections detected. Reason: Connection test failed repeatedly. Initiating application shutdown.
 ```
@@ -131,6 +130,7 @@ db:
     enabled: true
     health-check-query: "SELECT 1 FROM dual"
     max-failure-threshold: 5
+    critical-pool-utilization: 0.85  # Log warnings at 85% utilization
     monitoring-interval: 60000  # Check every minute
 ```
 

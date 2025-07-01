@@ -34,6 +34,9 @@ public class DatabaseConnectionMonitorService {
     @Value("${db.monitor.max-failure-threshold:3}")
     private int maxFailureThreshold;
 
+    @Value("${db.monitor.critical-pool-utilization:0.9}")
+    private double criticalPoolUtilization;
+
 
 
     private int consecutiveFailures = 0;
@@ -69,6 +72,9 @@ public class DatabaseConnectionMonitorService {
                 }
             }
 
+            // Always check pool utilization for logging purposes
+            checkPoolUtilization();
+
         } catch (Exception e) {
             log.error("Error during database monitoring cycle", e);
             consecutiveFailures++;
@@ -99,6 +105,44 @@ public class DatabaseConnectionMonitorService {
         } catch (SQLException e) {
             log.error("Database connection test failed: {}", e.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Checks pool utilization and logs warnings for critical levels.
+     * This is for monitoring purposes only - no shutdown actions are taken.
+     */
+    private void checkPoolUtilization() {
+        if (!(dataSource instanceof HikariDataSource)) {
+            return;
+        }
+
+        HikariDataSource hikariDataSource = (HikariDataSource) dataSource;
+        HikariPoolMXBean poolMXBean = hikariDataSource.getHikariPoolMXBean();
+
+        if (poolMXBean == null) {
+            return;
+        }
+
+        int maxPoolSize = hikariDataSource.getMaximumPoolSize();
+        int activeConnections = poolMXBean.getActiveConnections();
+        int idleConnections = poolMXBean.getIdleConnections();
+        int totalConnections = poolMXBean.getTotalConnections();
+        int threadsAwaitingConnection = poolMXBean.getThreadsAwaitingConnection();
+
+        // Calculate pool utilization
+        double poolUtilization = maxPoolSize > 0 ? (double) activeConnections / maxPoolSize : 0.0;
+
+        log.debug("Pool utilization check - Max: {}, Active: {}, Idle: {}, Total: {}, Waiting: {}, Utilization: {}%", 
+                   maxPoolSize, activeConnections, idleConnections, totalConnections, threadsAwaitingConnection,
+                   String.format("%.1f", poolUtilization * 100));
+
+        // Log warning for critical pool utilization
+        if (poolUtilization >= criticalPoolUtilization) {
+            log.warn("Critical pool utilization detected: {}% (threshold: {}%) - Active: {}, Max: {}, Waiting: {}", 
+                       String.format("%.1f", poolUtilization * 100), 
+                       String.format("%.1f", criticalPoolUtilization * 100),
+                       activeConnections, maxPoolSize, threadsAwaitingConnection);
         }
     }
 

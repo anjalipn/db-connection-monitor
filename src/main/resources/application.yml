@@ -2,7 +2,6 @@
 spring:
   application:
     name: db-connection-monitor
-  
 
 # Database monitoring configuration
 db:
@@ -10,14 +9,10 @@ db:
     enabled: true
     # Health check query to execute
     health-check-query: "SELECT 1"
-    # Connection timeout in milliseconds
-    connection-timeout: 5000
-    # Maximum consecutive failures before shutdown
+    # Maximum consecutive failures before considering shutdown
     max-failure-threshold: 3
-    # Critical pool utilization threshold (0.0 to 1.0)
+    # Critical pool utilization threshold (0.0 to 1.0) - for logging only
     critical-pool-utilization: 0.9
-    # Critical number of threads waiting for connections
-    critical-waiting-threads: 10
     # Monitoring interval in milliseconds (30 seconds)
     monitoring-interval: 30000
 
