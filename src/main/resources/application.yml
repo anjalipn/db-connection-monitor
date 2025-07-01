@@ -16,6 +16,11 @@ db:
     # Monitoring interval in milliseconds (30 seconds)
     monitoring-interval: 30000
 
+# Logging configuration
+logging:
+  level:
+    com.zaxxer.hikari: WARN
+
 
 
 
