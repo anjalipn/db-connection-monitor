@@ -42,12 +42,17 @@ public class DatabaseConnectionMonitorService {
     private int consecutiveFailures = 0;
     private boolean isShutdownInProgress = false;
 
+    public DatabaseConnectionMonitorService() {
+        log.warn("DatabaseConnectionMonitorService instantiated");
+    }
+
     /**
      * Scheduled method that runs periodically to monitor database connections.
      * Default interval is 30 seconds, configurable via db.monitor.monitoring-interval
      */
     @Scheduled(fixedDelayString = "${db.monitor.monitoring-interval:30000}")
     public void monitorDatabaseConnection() {
+        log.warn("Scheduled monitor task triggered");
         if (isShutdownInProgress) {
             log.warn("Shutdown already in progress, skipping monitoring cycle");
             return;

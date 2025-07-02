@@ -17,7 +17,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @ConditionalOnClass(DatabaseConnectionMonitorService.class)
 @ConditionalOnProperty(name = "db.monitor.enabled", havingValue = "true", matchIfMissing = true)
-
 @EnableScheduling
 public class DatabaseMonitorAutoConfiguration {
+
+    @Bean
+    @ConditionalOnMissingBean
+    public DatabaseConnectionMonitorService databaseConnectionMonitorService() {
+        return new DatabaseConnectionMonitorService();
+    }
 } 

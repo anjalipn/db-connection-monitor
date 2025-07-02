@@ -1,0 +1,62 @@
+# Hello World API Configuration
+spring:
+  application:
+    name: hello-world-api
+  
+  # H2 Database Configuration (for demo purposes)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # H2 Console (for development)
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# Database Connection Monitor Configuration
+db:
+  monitor:
+    enabled: true
+    # Health check query to execute
+    health-check-query: "SELECT 1"
+    # Maximum consecutive failures before considering shutdown
+    max-failure-threshold: 3
+    # Critical pool utilization threshold (0.0 to 1.0) - for logging only
+    critical-pool-utilization: 0.9
+    # Monitoring interval in milliseconds (30 seconds)
+    monitoring-interval: 30000
+
+# Logging configuration
+logging:
+  level:
+    com.zaxxer.hikari: WARN
+    com.example.helloworld: INFO
+    com.apimonitor.dbmonitor: DEBUG
+    org.springframework.scheduling: DEBUG
+    org.springframework.boot.autoconfigure: DEBUG
+    com.apimonitor.dbmonitor.config: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Server Configuration
+server:
+  port: 8080 
